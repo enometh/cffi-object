@@ -22,9 +22,25 @@
 
 (defgeneric funcall-form-type (function args))
 
+#||;madhu 241225
+(unintern 'cobj::+decfun+)
+(makunbound 'cobj::+defcfun+)
 (defconstant +defcfun+ (macro-function 'cffi:defcfun))
+(boundp 'cobj::+defcfun+)
+||#
+
+(defconstant +defcfun+ (if (boundp '+defcfun+)
+			   (symbol-value '+defcfun+)
+			   (load-time-value (macro-function 'cffi:defcfun))))
 
 (setf (macro-function 'defcfun) +defcfun+)
+;;madhu 241223 - on (mk:load-system 'cffi-object)
+;; (list cobj::+defcfun+ (macro-function 'cobj::defcfun) (macro-function 'cffi::defcfun)) produces
+;;(#<Compiled-function CFFI:DEFCFUN Macroexpander #x302000E5875F> #<Compiled-function CFFI:DEFCFUN Macroexpander #x302000E5875F> #<Compiled-function CFFI:DEFCFUN (Non-Global)  #x302001157C7F>)
+;; the value for (macro-function 'cobj::defcfun) is incorrect
+;; and needs to be fixed by calling
+;; (setf (macro-function 'cobj::defcfun) cobj::+defcfun+) again.
+;; madhu 260326 - try load-time-value to see if it fixes the problem on ccl
 
 (defun cobject-type-constructor (object-type)
   (if-let ((definition (when object-type (assoc-value *cobject-class-definitions* object-type))))
