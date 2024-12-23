@@ -31,6 +31,7 @@
            #:with-monotonic-buffer-allocator
            #:with-default-allocator
            #:with-leaky-allocator
-           #:defcobjfun))
+           #:defcobjfun
+           #:*sorted-symbol-list*))
 
 (in-package #:cffi-object)
