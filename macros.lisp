@@ -210,6 +210,38 @@
                (setf (assoc-value *cobject-class-definitions* ',type) ,cobject-class-definition)))
           (error "Definition for the base type of ~A is not found." type))))))
 
+
+(defvar *sorted-symbol-list* nil
+  "Kludge. Set this variable to a list of symbols to specify the order in
+which symbols should be processed by define-package-cobject-classes.")
+
+(defun sort-alist-on-symbol-key (alist)
+  "SORTED-SYMBOL-LIST if non nil should be a list of symbols that defines
+the order in which ALIST is to be sorted. The car of each ALIST
+element must be a symbol in the SYMBOL-LIST. If SYMBOL-LIST is NIL,
+ALIST is returned as it is."
+  (if (endp *sorted-symbol-list*)
+      alist
+      (let ((ht (make-hash-table :test #'eql)))
+	(loop for i from 0 for s in *sorted-symbol-list*
+	      do (unless (gethash s ht)	; keep earlier name
+		   (setf (gethash s ht) i)))
+	(flet ((symbol< (a b)
+		 (< (gethash a ht) (gethash b ht))))
+	  (stable-sort (copy-list alist)
+		       (lambda (a b) (symbol< (car a) (car b))))))))
+
+#||;madhu 241223
+(setq $a '((c 3) (a 1) (b 2)))
+*sorted-symbol-list*
+(sort-alist-on-symbol-key $a)
+(unwind-protect
+     (progn
+       (setq cobj::*sorted-symbol-list* '(b c a))
+       (sort-alist-on-symbol-key $a))
+  (setq cobj::*sorted-symbol-list* nil))
+||#
+
 (defmacro define-package-cobject-classes (desc)
   (unless (listp desc)
     (setf desc (list desc)))
@@ -218,9 +250,9 @@
       (shiftf source target *package*))
     (loop :with source-package := (find-package source) :and target-package := (find-package target)
           :with definitions :and type-set := (make-hash-table)
-          :for (source-name . type-getter) :in (nconc (hash-table-alist cffi::*default-type-parsers*)
-                                                      (hash-table-alist cffi::*struct-type-parsers*)
-						      (hash-table-alist cffi::*union-type-parsers*))
+          :for (source-name . type-getter) :in (nconc (sort-alist-on-symbol-key (remove-if-not (lambda (x) (eql (symbol-package (car x)) source-package))(hash-table-alist cffi::*default-type-parsers*)))
+                                                      (sort-alist-on-symbol-key  (remove-if-not (lambda (x) (eql (symbol-package (car x)) source-package)) (hash-table-alist cffi::*struct-type-parsers*)))
+						      (sort-alist-on-symbol-key  (remove-if-not (lambda (x) (eql (symbol-package (car x)) source-package)) (hash-table-alist cffi::*union-type-parsers*))))
           :when (eql (symbol-package source-name) source-package)
             :do (symbol-macrolet ((name (intern (symbol-name (cffi::name type)) target-package)))
                   (labels ((push-definition (type)
