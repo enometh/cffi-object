@@ -22,7 +22,16 @@
 
 (defgeneric funcall-form-type (function args))
 
+#||;madhu 241225
+(unintern 'cobj::+decfun+)
+(makunbound 'cobj::+defcfun+)
 (defconstant +defcfun+ (macro-function 'cffi:defcfun))
+(boundp 'cobj::+defcfun+)
+||#
+
+(defconstant +defcfun+ (if (boundp '+defcfun+)
+			   (symbol-value '+defcfun+)
+			   (macro-function 'cffi:defcfun)))
 
 (setf (macro-function 'defcfun) +defcfun+)
 ;;madhu 241223 - on (mk:load-system 'cffi-object)
