@@ -242,6 +242,31 @@ ALIST is returned as it is."
   (setq cobj::*sorted-symbol-list* nil))
 ||#
 
+(defun check-source-name-in-default-type-parsers (source-name)
+  "Return NON-NIL if SOURCE-NAME is present in CFFI::*DEFAULT-TYPE-PARSERS*
+as the deprecated struct type parser (via
+cffi::parse-deprecated-struct-type) AND is also present in either
+CFFI::*STRUCT-TYPE-PARSERS* or CFFI::*DEFAULT-TYPE-PARSERS*"
+  (let ((def-type-getter (gethash source-name cffi::*default-type-parsers*)))
+    (when def-type-getter
+      (let* ((str (gethash source-name cffi::*struct-type-parsers*))
+	     (uni (gethash source-name cffi::*union-type-parsers*))
+	     (alt-type-getter (or str uni)))
+	(when alt-type-getter
+	  (assert (not (and str uni)))
+	  (let ((def-type (funcall def-type-getter))
+		(alt-type (funcall alt-type-getter)))
+	    (eql (class-name (class-of def-type))
+		 (class-name (class-of alt-type)))))))))
+
+#||
+(length (user::hash-keys cffi::*default-type-parsers*));1408
+(length (remove-if #'check-source-name-in-default-type-parsers
+                   (user::hash-keys cffi::*default-type-parsers*)))
+;1064
+||#
+
+
 (defmacro define-package-cobject-classes (desc)
   (unless (listp desc)
     (setf desc (list desc)))
@@ -250,9 +275,15 @@ ALIST is returned as it is."
       (shiftf source target *package*))
     (loop :with source-package := (find-package source) :and target-package := (find-package target)
           :with definitions :and type-set := (make-hash-table)
-          :for (source-name . type-getter) :in (nconc (sort-alist-on-symbol-key (remove-if-not (lambda (x) (eql (symbol-package (car x)) source-package))(hash-table-alist cffi::*default-type-parsers*)))
-                                                      (sort-alist-on-symbol-key  (remove-if-not (lambda (x) (eql (symbol-package (car x)) source-package)) (hash-table-alist cffi::*struct-type-parsers*)))
-						      (sort-alist-on-symbol-key  (remove-if-not (lambda (x) (eql (symbol-package (car x)) source-package)) (hash-table-alist cffi::*union-type-parsers*))))
+          :for (source-name . type-getter) :in
+	  (sort-alist-on-symbol-key
+	   (remove-if-not (lambda (x)
+			    (eql (symbol-package (car x)) source-package))
+                          (nconc
+                           (remove-if #'check-source-name-in-default-type-parsers
+                                      (hash-table-alist cffi::*default-type-parsers*))
+                           (hash-table-alist cffi::*struct-type-parsers*)
+                           (hash-table-alist cffi::*union-type-parsers*))))
           :when (eql (symbol-package source-name) source-package)
             :do (symbol-macrolet ((name (intern (symbol-name (cffi::name type)) target-package)))
                   (labels ((push-definition (type)
