@@ -1,11 +1,11 @@
 (in-package #:cffi-object)
 
 (defun cffi-pointer-type-p (type)
-  (and (typep (setf type (cffi::ensure-parsed-base-type type)) 'cffi::foreign-pointer-type) type))
+  (and (typep (setf type (cffi-ensure-parsed-base-type type)) 'cffi::foreign-pointer-type) type))
 
 (defun cffi-object-type-p (type)
   (when-let ((type (cffi-pointer-type-p type)))
-    (and (typep (setf type (cffi::ensure-parsed-base-type (cffi-pointer-type type))) 'cffi::foreign-struct-type) type)))
+    (and (typep (setf type (cffi-ensure-parsed-base-type (cffi-pointer-type type))) 'cffi::foreign-struct-type) type)))
 
 (defparameter *return-argument-names* '(#:%%claw-result-))
 
@@ -109,7 +109,7 @@
                                                :collect `(push (cons nil (compose (lambda (,body) `(let ((,(assoc-value ,temp-vars ',name) ,,name)) . ,,body)) #'list)) ,dynamic-extent-forms))
                                      (nreversef ,dynamic-extent-forms)
                                      (lambda (,(caar args) ,body)
-                                       `(cffi:with-foreign-object (,,(caar args) ',',(cffi-pointer-type (cffi::ensure-parsed-base-type (cadar args))))
+                                       `(cffi:with-foreign-object (,,(caar args) ',',(cffi-pointer-type (cffi-ensure-parsed-base-type (cadar args))))
                                           ,(reduce #'funcall ,(if *optimize-out-temporary-object-p*
                                                                   `(loop :for (,name . ,form) :in ,dynamic-extent-forms
                                                                          :if ,name
