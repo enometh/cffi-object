@@ -3,7 +3,7 @@
 (defmacro with-new-cobject-class-definition ((name-form type-form) &body body)
   (with-gensyms (name slots type)
     `(let* ((,name ,name-form)
-            (,type (cffi::ensure-parsed-base-type ,type-form))
+            (,type (cffi-ensure-parsed-base-type ,type-form))
             (,slots (cffi:foreign-slot-names ,type))
             (predicate (symbolicate ,name '#:-p))
             (equality-comparator (symbolicate ,name '#:-equal))
@@ -31,7 +31,7 @@
          (let* ((,parsed-type (or ,type ,name))
                 (,parsed-type (typecase ,type
                                 (cffi::foreign-type ,parsed-type)
-                                (t (cffi::parse-type ,parsed-type)))))
+                                (t (funcall #'cffi-ensure-parsed-base-type ,parsed-type)))))
            (unless ,type
              (setf ,name (cffi::name ,parsed-type)))
            (setf ,type ,parsed-type)
@@ -44,7 +44,7 @@
        ,(with-new-cobject-class-definition (name type)
           `(eval-when (:compile-toplevel :load-toplevel :execute)
              (setf (assoc-value *cobject-class-definitions* ',type) ,cobject-class-definition)))
-       ,(let ((base-type (cffi::ensure-parsed-base-type type)))
+       ,(let ((base-type (cffi-ensure-parsed-base-type type)))
           (unless (or (eq type base-type) (assoc-value *cobject-class-definitions* base-type))
             (with-new-cobject-class-definition (name base-type)
               `(eval-when (:compile-toplevel :load-toplevel :execute)
@@ -53,7 +53,7 @@
 (defmacro define-struct-cobject-class (desc &rest options)
   (let ((options (reduce #'append options)))
     (with-parsed-desc (name ctype) desc
-      (let* ((type (cffi::ensure-parsed-base-type ctype))
+      (let* ((type (cffi-ensure-parsed-base-type ctype))
              (slots (cffi:foreign-slot-names type))
              (slot-supplied-p-list (mapcar (compose #'gensym #'symbol-name) slots)))
         (with-new-cobject-class-definition (name ctype)
@@ -71,7 +71,7 @@
                  ,@(loop :with slots := (cffi::slots type)
                          :for (slot-name . slot-accessor) :in slot-accessors
                          :for slot := (gethash slot-name slots)
-                         :for slot-type := (cffi::ensure-parsed-base-type (cffi:foreign-slot-type type slot-name))
+                         :for slot-type := (cffi-ensure-parsed-base-type (cffi:foreign-slot-type type slot-name))
                          :for slot-pointer := `(cffi:foreign-slot-pointer (cobject-pointer ,instance) ',type ',slot-name)
                          :for slot-value := `(cffi:foreign-slot-value (cobject-pointer ,instance) ',type ',slot-name)
                          :nconc `((declaim (inline ,slot-accessor))
@@ -90,14 +90,14 @@
                                                    :dimensions ',(cffi::dimensions slot-type)
                                                    :element-type ',(cobject-class-definition-class
                                                                     (find-cobject-class-definition
-                                                                     (cffi::ensure-parsed-base-type
+                                                                     (cffi-ensure-parsed-base-type
                                                                       (cffi-element-type slot-type))))))
                                                 (cffi::foreign-pointer-type
                                                  `(%make-cpointer
                                                    :pointer ,slot-value
                                                    :element-type ',(cobject-class-definition-class
                                                                     (find-cobject-class-definition
-                                                                     (cffi::ensure-parsed-base-type
+                                                                     (cffi-ensure-parsed-base-type
                                                                       (cffi-pointer-type slot-type))))))
                                                 (t slot-value))))
                                        (etypecase slot
@@ -137,7 +137,7 @@
                    (let ((,instance (,internal-constructor :pointer ,pointer)))
                      (declare (ignorable ,instance) (dynamic-extent ,instance))
                      ,@(loop :for slot :in slots
-                             :for slot-type := (cffi::ensure-parsed-base-type (cffi:foreign-slot-type type slot))
+                             :for slot-type := (cffi-ensure-parsed-base-type (cffi:foreign-slot-type type slot))
                              :for slot-supplied-p :in slot-supplied-p-list
                              :if (typep slot-type '(or cffi::foreign-struct-type cffi::foreign-array-type cffi::foreign-pointer-type))
                                :collect `(when ,slot-supplied-p
@@ -153,7 +153,7 @@
                    (let* ((,pointer (funcall (cobject-allocator-allocator *cobject-allocator*) ',type))
                           (,instance (,internal-constructor :pointer ,pointer)))
                      ,@(loop :for slot :in slots
-                             :for slot-type := (cffi::ensure-parsed-base-type (cffi:foreign-slot-type type slot))
+                             :for slot-type := (cffi-ensure-parsed-base-type (cffi:foreign-slot-type type slot))
                              :for slot-supplied-p :in slot-supplied-p-list
                              :collect `(when ,slot-supplied-p
                                          (setf (,(assoc-value slot-accessors slot) ,instance) ,slot)))
@@ -190,7 +190,7 @@
 
 (defmacro define-type-cobject-class (desc)
   (with-parsed-desc (name type) desc
-    (let ((base-type (cffi::ensure-parsed-base-type type)))
+    (let ((base-type (cffi-ensure-parsed-base-type type)))
       (with-new-cobject-class-definition (name type)
         (if-let ((definition (find-cobject-class-definition base-type)))
           `(progn
@@ -272,7 +272,7 @@ ALIST is returned as it is."
                                          (cffi::foreign-struct-type
                                           (loop for slot in (hash-table-values (cffi::slots type))
                                                 for slot-type = (cffi::slot-type slot)
-                                                for parsed-slot-type = (cffi::ensure-parsed-base-type slot-type)
+                                                for parsed-slot-type = (cffi-ensure-parsed-base-type slot-type)
                                                 do (etypecase parsed-slot-type
                                                      (cffi::foreign-pointer-type (push-definition (cffi-pointer-type parsed-slot-type)))
                                                      (t (push-definition parsed-slot-type))))

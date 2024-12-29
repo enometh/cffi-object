@@ -88,22 +88,22 @@
   (or (assoc-value *cobject-class-definitions* type)
       (make-cobject-class-definition
        :class (case type
-                (#.(cffi::ensure-parsed-base-type :float) 'single-float)
-                (#.(cffi::ensure-parsed-base-type :double) 'double-float)
-                (#.(mapcar #'cffi::ensure-parsed-base-type '(:int8 :int16 :int32 :int64))
+                (#.(cffi-ensure-parsed-base-type :float) 'single-float)
+                (#.(cffi-ensure-parsed-base-type :double) 'double-float)
+                (#.(mapcar #'cffi-ensure-parsed-base-type '(:int8 :int16 :int32 :int64))
                  `(signed-byte ,(* (cffi:foreign-type-size type) 8)))
-                (#.(mapcar #'cffi::ensure-parsed-base-type '(:uint8 :uint16 :uint32 :uint64))
+                (#.(mapcar #'cffi-ensure-parsed-base-type '(:uint8 :uint16 :uint32 :uint64))
                  `(unsigned-byte ,(* (cffi:foreign-type-size type) 8)))
-                (#.(cffi::ensure-parsed-base-type :void) 'null)
+                (#.(cffi-ensure-parsed-base-type :void) 'null)
                 (t (typecase type
                      (cffi::foreign-string-type 'string)
                      (cffi::foreign-array-type
                       `(carray ,(cobject-class-definition-class
-                                 (find-cobject-class-definition (cffi::ensure-parsed-base-type (cffi-element-type type))))
+                                 (find-cobject-class-definition (cffi-ensure-parsed-base-type (cffi-element-type type))))
                                ,(cffi::dimensions type)))
                      (cffi::foreign-pointer-type
                       `(cpointer ,(cobject-class-definition-class
-                                   (find-cobject-class-definition (cffi::ensure-parsed-base-type (cffi-pointer-type type))))))
+                                   (find-cobject-class-definition (cffi-ensure-parsed-base-type (cffi-pointer-type type))))))
                      (cffi::foreign-enum
-                      `(unsigned-byte ,(* (cffi:foreign-type-size (cffi::ensure-parsed-base-type :unsigned-int)))))
+                      `(unsigned-byte ,(* (cffi:foreign-type-size (cffi-ensure-parsed-base-type :unsigned-int)))))
                      (t (error 'cobject-class-definition-not-found-error :type type))))))))

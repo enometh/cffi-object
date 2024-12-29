@@ -43,3 +43,17 @@
 
 (defun cffi-pointer-type (type)
   (or (cffi::pointer-type type) :void))
+
+(defconstant +ensure-parsed-base-type+
+  (if (boundp '+ensure-parsed-base-type+)
+      (symbol-value '+ensure-parsed-base-type+)
+      #'cffi::ensure-parsed-base-type))
+
+(defun cffi-ensure-parsed-base-type (type)
+  (cond ((and (symbolp type)
+	      (gethash type cffi::*struct-type-parsers*))
+	 (funcall +ensure-parsed-base-type+ `(:struct ,type)))
+	((and (symbolp type)
+	      (gethash type cffi::*union-type-parsers*))
+	 (funcall +ensure-parsed-base-type+ `(:union ,type)))
+	(t (funcall +ensure-parsed-base-type+ type))))
