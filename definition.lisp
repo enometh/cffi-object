@@ -90,9 +90,9 @@
        :class (case type
                 (#.(cffi-ensure-parsed-base-type :float) 'single-float)
                 (#.(cffi-ensure-parsed-base-type :double) 'double-float)
-                (#.(mapcar #'cffi-ensure-parsed-base-type '(:int8 :int16 :int32 :int64))
+                (#.(mapcar #'cffi-ensure-parsed-base-type '(:int8 :int16 :int32 :int64 :long :long-long))
                  `(signed-byte ,(* (cffi:foreign-type-size type) 8)))
-                (#.(mapcar #'cffi-ensure-parsed-base-type '(:uint8 :uint16 :uint32 :uint64))
+                (#.(mapcar #'cffi-ensure-parsed-base-type '(:uint8 :uint16 :uint32 :uint64 :unsigned-long :unsigned-long-long))
                  `(unsigned-byte ,(* (cffi:foreign-type-size type) 8)))
                 (#.(cffi-ensure-parsed-base-type :void) 'null)
                 (t (typecase type
