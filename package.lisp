@@ -32,6 +32,9 @@
            #:with-default-allocator
            #:with-leaky-allocator
            #:defcobjfun
-           #:*sorted-symbol-list*))
+           #:*sorted-symbol-list*
+           #:turn-on-cobj
+           #:turn-off-cobj
+   ))
 
 (in-package #:cffi-object)

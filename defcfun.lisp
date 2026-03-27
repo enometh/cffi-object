@@ -42,6 +42,18 @@
 ;; (setf (macro-function 'cobj::defcfun) cobj::+defcfun+) again.
 ;; madhu 260326 - try load-time-value to see if it fixes the problem on ccl
 
+(defun turn-on-cobj ()
+  (unless (equal (macro-function 'cffi::defcfun)
+		 (macro-function 'cobj::defcobjfun))
+    (setf (macro-function 'cffi::defcfun)
+	  (macro-function 'cobj::defcobjfun))))
+
+(defun turn-off-cobj ()
+  (when (equal (macro-function 'cffi::defcfun)
+	       (macro-function 'cobj::defcobjfun))
+    (setf (macro-function 'cffi::defcfun)
+	  cobj::+defcfun+)))
+
 (defun cobject-type-constructor (object-type)
   (if-let ((definition (when object-type (assoc-value *cobject-class-definitions* object-type))))
     (values (cobject-class-definition-constructor definition)
