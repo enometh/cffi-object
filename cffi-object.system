@@ -28,7 +28,8 @@
 		(:file "array")
 		(:file "macros")
 		(:file "defcfun")
-		(:file "global")))
+		(:file "global")
+		(:file "utils")))
 
 #+nil
 (mk:oos :cffi-object :load :compile-during-load t)

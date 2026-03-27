@@ -19,7 +19,8 @@
                (:file "array")
                (:file "macros")
                (:file "defcfun")
-               (:file "global"))
+               (:file "global")
+               (:file "utils"))
   :depends-on (#:uiop #:alexandria #:cffi #:trivial-garbage)
   :in-order-to ((test-op (test-op #:cffi-object/test))))
 

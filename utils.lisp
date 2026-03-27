@@ -1,0 +1,41 @@
+;;; -*- Mode: LISP; Package: :cl-user; BASE: 10; Syntax: ANSI-Common-Lisp; -*-
+;;;
+;;;   Time-stamp: <>
+;;;   Touched: Fri Mar 27 17:49:26 2026 +0530 <enometh@net.meer>
+;;;   Bugs-To: enometh@net.meer
+;;;   Status: Experimental.  Do not redistribute
+;;;   Copyright (C) 2026 Madhu.  All Rights Reserved.
+;;;
+;;;
+;;; utils.lisp: collect experimental code here
+;;;
+(in-package "CFFI-OBJECT")
+
+;;; ----------------------------------------------------------------------
+;;;
+;;;
+;;;
+(export '(cobject-new))
+
+(defun cobject-new (cffi-type &optional (cobj-type cffi-type))
+  "Allocates an object of the given CFFI-TYPE and manages it.
+CFFI-TYPE should be a suitable parameter for CFFI:FOREIGN-ALLOC,
+COBJ-TYPE a suitable second parameter to COBJ:POINTER-CPOINTER."
+  (manage-cobject
+   (let ((tclass (cffi::parse-type cffi-type)))
+     (pointer-cpointer
+      (funcall (cobject-allocator-allocator *cobject-allocator*)
+	       tclass)
+      (or cobj-type cffi-type)))))
+
+#||
+(cffi:defcstruct foo (a :int) (b :int))
+(cobj:define-cobject-class foo)
+(setq $f (cobject-new 'foo))
+(setf (foo-a $f) 10)
+(setf (foo-b $f) 10)
+(cffi:foreign-slot-value (cobj:cobject-pointer $f) 'foo 'a)
+(setq $fl (wrap-lvalue $f))
+(cffi:pointer-eq (cffi:mem-ref (cobj:cobject-pointer $f) :pointer)
+		 (cobj:cobject-pointer $fl))
+||#
