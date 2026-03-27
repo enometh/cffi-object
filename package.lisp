@@ -3,6 +3,7 @@
   (:nicknames #:cobj)
   (:export #:cobject
            #:cobject-eq
+           #:cobject-new
            #:cobject-pointer
            #:cpointer
            #:pointer-cpointer

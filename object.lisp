@@ -30,3 +30,10 @@
 (defgeneric cobject-type (object)
   (:method (object)
     (type-of object)))
+
+(defun cobject-new (type)
+  "Allocates an object of the given TYPE and manages it., TYPE should be
+a suitable parameter for CFFI:FOREIGN-ALLOC, and a suitable second
+paramter to COBJ:POINTER-CPOINTER."
+  (cobj:manage-cobject
+   (cobj:pointer-cpointer (cffi:foreign-alloc type) type)))
