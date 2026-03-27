@@ -56,10 +56,13 @@
            (internal-symbol (if should-define-wrapper-p (intern (format nil "%~A" symbol) (symbol-package symbol)) symbol))
            (return-pointer-from-result-p (cffi-pointer-type-p result))
            (return-object-from-result-p (cffi-object-type-p result))
+           (docstring (when (stringp (car args)) (pop args)))
            (return-object-from-argument-p (member (caar args) *return-argument-names* :test #'symbol-name=)))
       `(progn
          (declaim (inline ,internal-symbol))
-         (defcfun (,name ,internal-symbol) ,result . ,args)
+         (defcfun (,name ,internal-symbol) ,result . ,(if docstring
+                                                          (cons docstring args)
+                                                          args))
          (export ',internal-symbol ',(symbol-package internal-symbol))
          ,(when should-define-wrapper-p
             (if return-object-from-argument-p
