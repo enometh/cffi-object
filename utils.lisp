@@ -53,3 +53,32 @@ value points to the given COBJ"
   (pointer-cpointer
    (cffi:mem-ref (cobject-pointer cobj) :pointer)
    (or cobj-type :pointer)))
+
+
+;;; ----------------------------------------------------------------------
+;;;
+;;;
+;;;
+(export '(cobj-definables get-exportables))
+
+(defun cobj-definables (spec-package)
+  (loop for s being each symbol of spec-package
+	with defn
+	when (and (find-class s nil)
+		  (setq defn (ignore-errors
+			       (cobj::cobject-class-definition s))))
+	collect defn))
+
+(defun get-exportables (spec-package &key include-already-exported restrict-to-internal-syms)
+  (loop for defn in (cobj-definables spec-package)
+	append
+	(remove-if
+	 (lambda (s)
+	   (multiple-value-bind (sym stat)
+	       (find-symbol (string s) spec-package)
+	     (assert (eql sym s))
+	     (and (or (not restrict-to-internal-syms)
+		      (eql (symbol-package sym) (find-package spec-package)))
+		  (unless include-already-exported
+		    (eql stat :external)))))
+	 (cobj::cobject-class-definition-symbols defn))))
