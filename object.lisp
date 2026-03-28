@@ -51,3 +51,10 @@ second parameter to COBJ:POINTER-CPOINTER."
 (cffi:pointer-eq (cffi:mem-ref (cobj:cobject-pointer $f) :pointer)
 		 (cobj:cobject-pointer $fl))
 ||#
+
+(defun wrap-lvalue (cobj &optional cobj-type)
+  "Return a pointer. A conceptual Address-of operation on the returned
+value points to the given COBJ"
+  (pointer-cpointer
+   (cffi:mem-ref (cobject-pointer cobj) :pointer)
+   (or cobj-type :pointer)))

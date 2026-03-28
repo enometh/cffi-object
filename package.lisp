@@ -4,6 +4,7 @@
   (:export #:cobject
            #:cobject-eq
            #:cobject-new
+           #:wrap-lvalue
            #:cobject-pointer
            #:cpointer
            #:pointer-cpointer
