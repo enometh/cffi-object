@@ -31,9 +31,23 @@
   (:method (object)
     (type-of object)))
 
-(defun cobject-new (type)
+(defun cobject-new (cffi-type &optional (cobj-type cffi-type))
   "Allocates an object of the given TYPE and manages it., TYPE should be
-a suitable parameter for CFFI:FOREIGN-ALLOC, and a suitable second
-paramter to COBJ:POINTER-CPOINTER."
-  (cobj:manage-cobject
-   (cobj:pointer-cpointer (cffi:foreign-alloc type) type)))
+a suitable parameter for CFFI:FOREIGN-ALLOC, COBJ-TYPE a suitable
+second parameter to COBJ:POINTER-CPOINTER."
+  (manage-cobject
+   (pointer-cpointer
+    (cffi:foreign-alloc cffi-type)
+    (or cobj-type cffi-type))))
+
+#||
+(cffi:defcstruct foo (a :int) (b :int))
+(cobj:define-cobject-class foo)
+(setq $f (cobject-new 'foo))
+(setf (foo-a $f) 10)
+(setf (foo-b $f) 10)
+(cffi:foreign-slot-value (cobj:cobject-pointer $f) 'foo 'a)
+(setq $fl (wrap-lvalue $f))
+(cffi:pointer-eq (cffi:mem-ref (cobj:cobject-pointer $f) :pointer)
+		 (cobj:cobject-pointer $fl))
+||#
