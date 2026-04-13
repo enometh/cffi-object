@@ -82,3 +82,23 @@ value points to the given COBJ"
 		  (unless include-already-exported
 		    (eql stat :external)))))
 	 (cobj::cobject-class-definition-symbols defn))))
+
+
+;;; ----------------------------------------------------------------------
+;;;
+;;;
+;;;
+(export '(null-cpointer null-cpointer-p))
+
+(cffi:defcstruct (null-ptr :size 0))
+(define-cobject-class (:struct null-ptr))
+
+(defun null-cpointer ()
+  (pointer-cobject (cffi:null-pointer) 'null-ptr))
+(defun null-cpointer-p (c)
+  (cffi:null-pointer-p (cobject-pointer c)))
+
+#||
+(defvar +cobj-null+ (null-cpointer))
+(null-cpointer-p +cobj-null+)
+||#
