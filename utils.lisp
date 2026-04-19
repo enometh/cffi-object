@@ -83,6 +83,16 @@ value points to the given COBJ"
 		    (eql stat :external)))))
 	 (cobj::cobject-class-definition-symbols defn))))
 
+#||
+e.g. to export cffi-object methods in the same package
+as the claw bindings: use this idiom
+``` exports.lisp
+(common-lisp:in-package :claw-cxx-fc)
+(cobj:define-cobject-class :claw-cxx-fc)
+(cl:export (cobj:get-exportables :claw-cxx-fc) :claw-cxx-fc)
+```
+||#
+
 
 ;;; ----------------------------------------------------------------------
 ;;;
