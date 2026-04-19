@@ -120,3 +120,103 @@ value points to the given COBJ"
 (setf (cobj:caref $s1 3) #\c)
 (cobj:ccoerce $s1 'string)
 ||#
+
+
+;;; ----------------------------------------------------------------------
+;;;
+;;;
+;;;
+(export '(with-cobj with-cobjs))
+
+(defun frobp (ptr cffi-type cobj-type)
+  "Internal. Second return value is a cffi pointer which needs to be
+deallocated if non-NULL. First return value is a cpointer of type (or
+cobj-type cffi-type). PTR can be NIL (a cobject is allocated and
+returned as the first return value), or a cffi pointer, which is used
+to construct the first return value, or a cpointer, which is just returned."
+  (let* ((p nil)
+	 (pobj
+	  (cond ((null ptr)
+		 (let ((tclass (cffi::parse-type cffi-type)))
+		   (setq p
+			 (funcall (cobject-allocator-allocator *cobject-allocator*)
+				  tclass)))
+		 (pointer-cpointer p (or cobj-type cffi-type)))
+		((cffi:pointerp ptr)
+		 (pointer-cpointer ptr (or cobj-type cffi-type)))
+		((cpointer-p ptr) ptr)
+		(t (error "Invalid ptr wanted one of cffi pointer or cffi-object:cpointer on NIL")))))
+    (values pobj p)))
+
+(defun call-with-cobj (cffi-type func &key ptr cobj-type)
+  (let (p pobj)
+    (unwind-protect
+	 (progn
+	   (multiple-value-setq (pobj p)
+	     (frobp ptr cffi-type cobj-type))
+	   (funcall func pobj))
+      (when p
+	(assert (not ptr))
+	(funcall (cobject-allocator-deallocator *cobject-allocator*) p)))))
+
+(defmacro with-cobj ((var cffi-type &key ptr cobj-type)  &body body)
+  `(flet ((doit (,var) ,@body))
+     (call-with-cobj ,cffi-type #'doit :ptr ,ptr :cobj-type ,cobj-type)))
+
+(defun call-with-cobjs (bindings-specs function)
+  "BINDINGS-SPECTS = (CFFI-TYPE &KEY PTR COBJ-TYPE)"
+  ;;(declare (optimize (safety 3) (debug 3)))
+  (let (specs)
+    (unwind-protect
+	 (progn (dolist (bind bindings-specs)
+		  (destructuring-bind (cffi-type &key ptr cobj-type) bind
+		    (multiple-value-bind (pobj p)
+			(frobp ptr cffi-type cobj-type)
+		      (push (list pobj p) specs))))
+		(let ((params  (reverse (mapcar #'car specs))))
+		  (apply function params)))
+      (loop for (pobj p) in specs
+	    when p
+	    do (funcall (cobject-allocator-deallocator *cobject-allocator*)
+			p)))))
+
+(declaim (inline call-with-cobjs call-with-cobj))
+
+(defmacro with-cobjs (bindings &body body)
+  (let ((args (mapcar #'car bindings))
+	(specs (mapcar #'cdr bindings)))
+    `(flet ((doit ,args ,@body))
+       ;;(declare (optimize (speed 0) (safety 3) (debug 3)))
+       (call-with-cobjs
+	(list ,@(loop for b in specs
+		      collect (destructuring-bind (cffi-type &key ptr cobj-type) b
+				`(list ',cffi-type :ptr ,ptr :cobj-type ',cobj-type))))
+	#'doit))))
+
+#||
+(cffi:defcstruct foo (a :int) (b :int))
+(cobj::define-struct-cobject-class foo)
+(setq $foo-1 (cobj:cobject-new 'foo))
+
+(time
+ (with-cobjs ((foo (:struct foo) :ptr $foo-1)
+	      (bar (:struct foo)))
+   (setf (foo-a foo) 10)
+   (setf (foo-b foo) 20)
+   (setf (foo-b bar) 30)
+   (setf (foo-a bar) 40)
+   (list foo bar)))
+(call-with-cobjs `(((:struct foo) :ptr ,$foo-1))
+		 #'(lambda (x)
+		     (setf (foo-a x) 10)
+		     (setf (foo-b x) 20)
+		     x))
+(list (foo-a $foo-1) (foo-b $foo-1))
+(call-with-cobj '(:struct foo)
+		#'(lambda (x)
+		    (setf (foo-a x) 10)
+		    (setf (foo-b x) 20)
+		    x))
+(with-cobj (foo-1 '(:struct foo) :ptr $foo-1)
+  (setf (foo-a foo-1) 65))
+||#
