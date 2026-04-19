@@ -102,3 +102,21 @@ value points to the given COBJ"
 (defvar +cobj-null+ (null-cpointer))
 (null-cpointer-p +cobj-null+)
 ||#
+
+
+;;; ----------------------------------------------------------------------
+;;;
+;;;
+;;;
+(export '(make-cobj-string))
+
+(defun make-cobj-string (str)
+  "make-cobj-string (str) replaces (with-foreign-string (s str :encoding utf-8)) but loses the ability to specify explicit utf-8 translation"
+  (cobj:make-carray (1+ (length str)) :element-type 'character :initial-contents
+		    str))
+
+#||
+(setq $s1 (make-cobj-string "Sans Serif"))
+(setf (cobj:caref $s1 3) #\c)
+(cobj:ccoerce $s1 'string)
+||#
