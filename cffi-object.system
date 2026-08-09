@@ -44,6 +44,16 @@
 #+nil
 (mk:oos :cffi-object.ops :load :compile-during-load t)
 
+(mk:defsystem :cffi-object.claw-gen
+  :source-pathname *cffi-object-source-dir*
+  :binary-pathname *cffi-object-binary-dir*
+  :depends-on ("cffi-object" "claw/wrapper")
+  :source-extension "lisp"
+  :components ((:file "utils-claw-gen")))
+
+#+nil
+(mk:oos :cffi-object.claw-gen :load :compile-during-load t)
+
 (mk:defsystem :cffi-object/test
   :source-pathname *cffi-object-source-dir*
   :binary-pathname *cffi-object-binary-dir*
